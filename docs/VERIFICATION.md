@@ -73,4 +73,6 @@ The e2e script runs 77 checks (78 with `--offline`) against the live GitHub Page
 - Optimize savings, share link in a new browser context, theme toggle, focus trap and focus restore.
 - Mobile viewport (no horizontal overflow, dialogs fit, Back closes); offline reload from the service worker; no JavaScript errors.
 
-Results are listed in the release notes for each deploy.
+Result on the live site (https://shaikbasha1437.github.io/querycost/, 2026-10-30): **Chromium 78/78 passed** (including the offline reload, with 32 files served from the `querycost-v1` cache) and **Firefox 77/77 passed**.
+
+The script lives outside the repo; run it with `node qc-e2e.mjs <url> [chromium|firefox] [--offline]` after `npm i playwright`.
