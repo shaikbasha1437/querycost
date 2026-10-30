@@ -1,0 +1,97 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>QueryCost: SQL cost estimator and linter for BigQuery, Snowflake, Databricks, Redshift and Athena</title>
+  <meta name="description" content="Paste SQL, pick a warehouse, and see what it will cost per run, per day and per month, which columns and partitions it reads, and how to make it cheaper. Runs entirely in your browser.">
+  <meta name="theme-color" content="#5b4dff">
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="icon" href="icons/icon.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="icons/icon-192.png">
+  <link rel="stylesheet" href="styles.css">
+  <script>try { var t = localStorage.getItem('querycost:theme'); document.documentElement.dataset.theme = t || (matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'); } catch (e) { document.documentElement.dataset.theme = 'light'; }</script>
+</head>
+<body>
+  <a class="skip" href="#results">Skip to results</a>
+  <header class="topbar">
+    <a class="brand" href="./" aria-label="QueryCost home"><img src="icons/icon.svg" alt="" width="30" height="30"> QueryCost <small>SQL cost estimator</small></a>
+    <nav class="nav" aria-label="Main">
+      <button class="btn ghost" id="btnTemplates" type="button" title="Templates and sample queries"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg><span class="lbl">Templates</span></button>
+      <button class="btn ghost" id="btnCatalog" type="button" title="Table catalog"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><ellipse cx="12" cy="5" rx="8" ry="3"/><path d="M4 5v14c0 1.7 3.6 3 8 3s8-1.3 8-3V5"/><path d="M4 12c0 1.7 3.6 3 8 3s8-1.3 8-3"/></svg><span class="lbl">Catalog</span></button>
+      <button class="btn ghost" id="btnSettings" type="button" title="Prices and assumptions"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M4 21v-7M4 10V3M12 21v-9M12 8V3M20 21v-5M20 12V3M1 14h6M9 8h6M17 16h6"/></svg><span class="lbl">Assumptions</span></button>
+      <button class="btn ghost" id="btnHistory" type="button" title="Saved queries"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M3 12a9 9 0 1 0 3-6.7L3 8"/><path d="M3 3v5h5M12 7v5l3 3"/></svg><span class="lbl">History</span></button>
+      <button class="btn ghost" id="btnShare" type="button" title="Share link"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M10 13a5 5 0 0 0 7.5.5l3-3a5 5 0 0 0-7-7l-1.7 1.7"/><path d="M14 11a5 5 0 0 0-7.5-.5l-3 3a5 5 0 0 0 7 7l1.7-1.7"/></svg><span class="lbl">Share</span></button>
+      <button class="btn ghost" id="btnExport" type="button" title="Export report"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M12 3v12M7 10l5 5 5-5M5 21h14"/></svg><span class="lbl">Export</span></button>
+      <button class="btn ghost icon-btn" id="btnHelp" type="button" aria-label="Help and about" title="Help"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M9.5 9a2.5 2.5 0 1 1 3.5 2.3c-.6.3-1 .9-1 1.6V14M12 17.5v.01"/></svg></button>
+      <button class="btn ghost icon-btn" id="btnTheme" type="button" aria-label="Switch to dark theme" title="Theme"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg></button>
+    </nav>
+  </header>
+
+  <main class="layout">
+    <section class="pane" aria-label="Query">
+      <div class="card editor-card">
+        <div class="row">
+          <input id="qname" class="qname" type="text" aria-label="Query name" placeholder="Untitled query" maxlength="120" autocomplete="off">
+          <span id="catalogLabel" class="badge" title="Active catalog"></span>
+        </div>
+        <div id="whPicker" class="wh-picker" role="radiogroup" aria-label="Warehouse"></div>
+        <div id="whOptions" class="wh-options" aria-label="Warehouse options"></div>
+        <div id="editor" class="editor"></div>
+        <div class="editor-actions">
+          <button class="btn primary" id="btnEstimate" type="button">Estimate <kbd>Ctrl ↵</kbd></button>
+          <button class="btn" id="btnSave" type="button">Save to history</button>
+          <button class="btn" id="btnSamples" type="button">Sample queries</button>
+          <button class="btn ghost" id="btnClear" type="button">Clear</button>
+          <span id="parseStatus" class="small muted grow" aria-live="polite"></span>
+        </div>
+        <fieldset>
+          <legend>Schedule</legend>
+          <div class="sched">
+            <label><input type="radio" name="schedMode" value="perDay" id="schedPerDay"> Runs per day <input type="number" id="perDay" min="0" step="1" aria-label="Runs per day"></label>
+            <label><input type="radio" name="schedMode" value="cron" id="schedCron"> Cron <input type="text" id="cron" placeholder="0 6 * * *" aria-label="Cron expression" spellcheck="false" autocomplete="off"></label>
+            <span id="schedInfo" class="hint muted" aria-live="polite"></span>
+          </div>
+        </fieldset>
+      </div>
+    </section>
+
+    <section class="pane" id="results" aria-label="Results" tabindex="-1">
+      <div class="card summary" id="summary"></div>
+      <div class="card">
+        <div class="tabs" role="tablist" aria-label="Result views">
+          <button class="tab" role="tab" id="tab-breakdown" aria-controls="panel-breakdown" aria-selected="true">Breakdown</button>
+          <button class="tab" role="tab" id="tab-findings" aria-controls="panel-findings" aria-selected="false" tabindex="-1">Findings <span class="count" id="findCount">0</span></button>
+          <button class="tab" role="tab" id="tab-optimize" aria-controls="panel-optimize" aria-selected="false" tabindex="-1">Optimize</button>
+          <button class="tab" role="tab" id="tab-compare" aria-controls="panel-compare" aria-selected="false" tabindex="-1">Compare</button>
+        </div>
+        <div class="panel" role="tabpanel" id="panel-breakdown" aria-labelledby="tab-breakdown" tabindex="0"></div>
+        <div class="panel" role="tabpanel" id="panel-findings" aria-labelledby="tab-findings" tabindex="0" hidden></div>
+        <div class="panel" role="tabpanel" id="panel-optimize" aria-labelledby="tab-optimize" tabindex="0" hidden></div>
+        <div class="panel" role="tabpanel" id="panel-compare" aria-labelledby="tab-compare" tabindex="0" hidden></div>
+      </div>
+      <p class="disclaimer">Estimates only. QueryCost does not connect to any warehouse; numbers come from your catalog sizes and the editable assumptions, with list prices as of <span id="asOf"></span>. Your SQL and catalog stay in this browser.</p>
+    </section>
+  </main>
+  <div id="toasts" class="toasts" aria-live="polite" aria-atomic="false"></div>
+
+  <script src="js/vendor/codemirror.js"></script>
+  <script src="js/sqlutil.js"></script>
+  <script src="js/catalog.js"></script>
+  <script src="js/analyze.js"></script>
+  <script src="js/pricing.js"></script>
+  <script src="js/schedule.js"></script>
+  <script src="js/estimate.js"></script>
+  <script src="js/engine.js"></script>
+  <script src="js/rewrite.js"></script>
+  <script src="js/lint.js"></script>
+  <script src="js/templates.js"></script>
+  <script src="js/report.js"></script>
+  <script src="js/share.js"></script>
+  <script src="js/modal.js"></script>
+  <script src="js/store.js"></script>
+  <script src="js/ui.js"></script>
+  <script src="js/dialogs.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>

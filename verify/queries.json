@@ -1,0 +1,24 @@
+{
+  "today": "2026-10-30",
+  "catalog": { "name": "duckdb-check", "tables": [
+    { "name": "orders", "rows": 60000, "partition": { "column": "order_date", "granularity": "day", "count": 60, "end": "2026-10-30" },
+      "columns": [ { "name": "order_id", "type": "BIGINT", "unique": true }, { "name": "customer_id", "type": "BIGINT" }, { "name": "order_date", "type": "DATE" },
+                   { "name": "amount", "type": "DOUBLE" }, { "name": "notes", "type": "VARCHAR" }, { "name": "status", "type": "VARCHAR" } ] },
+    { "name": "customers", "rows": 5000, "columns": [ { "name": "customer_id", "type": "BIGINT", "unique": true }, { "name": "region", "type": "VARCHAR" }, { "name": "email", "type": "VARCHAR" } ] }
+  ] },
+  "queries": [
+    { "name": "one day", "sql": "SELECT amount FROM orders WHERE order_date = DATE '2026-10-15'" },
+    { "name": "last 7 days (open range)", "sql": "SELECT customer_id, amount FROM orders WHERE order_date >= DATE '2026-10-24'" },
+    { "name": "closed range", "sql": "SELECT SUM(amount) FROM orders WHERE order_date >= DATE '2026-10-01' AND order_date < DATE '2026-10-15'" },
+    { "name": "BETWEEN", "sql": "SELECT order_id FROM orders WHERE order_date BETWEEN DATE '2026-09-10' AND DATE '2026-09-19'" },
+    { "name": "IN list", "sql": "SELECT status FROM orders WHERE order_date IN (DATE '2026-10-01', DATE '2026-10-03', DATE '2026-10-05')" },
+    { "name": "OR of two days", "sql": "SELECT amount FROM orders WHERE order_date = DATE '2026-10-01' OR order_date = DATE '2026-10-20'" },
+    { "name": "OR with another column (no pruning)", "sql": "SELECT amount FROM orders WHERE order_date = DATE '2026-10-01' OR amount > 99" },
+    { "name": "no partition filter", "sql": "SELECT status, COUNT(*) FROM orders GROUP BY status" },
+    { "name": "SELECT * one day", "sql": "SELECT * FROM orders WHERE order_date = DATE '2026-10-30'" },
+    { "name": "filter pushed through a CTE", "sql": "WITH o AS (SELECT * FROM orders) SELECT customer_id, amount FROM o WHERE order_date >= DATE '2026-10-28'" },
+    { "name": "join with partition filter", "sql": "SELECT c.region, SUM(o.amount) FROM orders o JOIN customers c ON o.customer_id = c.customer_id WHERE o.order_date >= DATE '2026-10-25' GROUP BY c.region" },
+    { "name": "filter-only column", "sql": "SELECT order_id FROM orders WHERE status = 'open' AND order_date = DATE '2026-10-10'" },
+    { "name": "EXTRACT on partition column", "sql": "SELECT amount FROM orders WHERE EXTRACT(MONTH FROM order_date) = 9" }
+  ]
+}

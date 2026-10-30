@@ -1,0 +1,15 @@
+{
+  "name": "QueryCost",
+  "short_name": "QueryCost",
+  "description": "Estimate SQL query cost on BigQuery, Snowflake, Databricks SQL, Redshift and Athena, and lint queries for cheaper rewrites. Runs in your browser.",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#0d1117",
+  "theme_color": "#5b4dff",
+  "icons": [
+    { "src": "icons/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "icons/icon.svg", "sizes": "any", "type": "image/svg+xml" }
+  ]
+}

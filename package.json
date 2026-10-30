@@ -1,0 +1,12 @@
+{
+  "name": "querycost",
+  "version": "1.0.0",
+  "description": "Estimate SQL query cost on BigQuery, Snowflake, Databricks SQL, Redshift and Athena, and lint queries for cheaper rewrites. Client-side only.",
+  "private": true,
+  "license": "MIT",
+  "scripts": {
+    "test": "node --test test/*.test.js",
+    "serve": "python3 -m http.server 8080"
+  },
+  "engines": { "node": ">=18" }
+}
